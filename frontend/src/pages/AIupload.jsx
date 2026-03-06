@@ -85,10 +85,10 @@ function AIUpload({ user }) {
   const { addToCart } = useCart();
 
   const imagekit = new ImageKit({
-    publicKey: "public_AyUHLs9Ty0WgUnMd7ixNPZnxFJQ=",
-    urlEndpoint: "https://ik.imagekit.io/aryan2004",
-    authenticationEndpoint: `${import.meta.env.VITE_API_URL || "http://localhost:5000/api"}/imagekit/auth`
-  });
+  publicKey: "public_AyUHLs9Ty0WgUnMd7ixNPZnxFJQ=",
+  urlEndpoint: "https://ik.imagekit.io/aryan2004",
+  authenticationEndpoint: "https://skinify-backend-wmf4.onrender.com/api/imagekit/auth"
+});
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
