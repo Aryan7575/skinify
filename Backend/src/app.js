@@ -12,8 +12,9 @@ app.use(
   cors({
     origin: [
       "http://localhost:5173",
-      "https://skinify-plum.vercel.app/",        // ✅ replace with your actual Vercel URL
-      "https://skinify-git-master-aryan7575.vercel.app", // ✅ Vercel preview URL
+      "https://skinify-plum.vercel.app",
+      "https://skinify-git-master-aryan7575.vercel.app",
+      "https://skinify-aryan7575s-projects.vercel.app",  // ✅ your actual URL
     ],
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
