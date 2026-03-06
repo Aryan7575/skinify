@@ -87,7 +87,7 @@ function AIUpload({ user }) {
   const imagekit = new ImageKit({
     publicKey: "public_AyUHLs9Ty0WgUnMd7ixNPZnxFJQ=",
     urlEndpoint: "https://ik.imagekit.io/aryan2004",
-    authenticationEndpoint: "http://localhost:5000/api/imagekit/auth"
+    authenticationEndpoint: `${import.meta.env.VITE_API_URL}/imagekit/auth`
   });
 
   const handleFileChange = (e) => {
