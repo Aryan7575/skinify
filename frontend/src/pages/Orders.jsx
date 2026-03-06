@@ -182,9 +182,9 @@ function Orders() {
     const fetchOrders = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await fetch("http://localhost:5000/api/orders/my", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const res = await fetch("https://skinify-backend-wmf4.onrender.com/api/orders/my", {
+  headers: { Authorization: `Bearer ${token}` },
+});
         const data = await res.json();
         setOrders(data);
       } catch (err) {

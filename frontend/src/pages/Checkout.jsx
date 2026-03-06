@@ -441,20 +441,20 @@ function Checkout() {
 
     try {
       const token = localStorage.getItem("token");
-      await fetch("http://localhost:5000/api/orders", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          products: cart.map(i => ({ productId: i._id, quantity: i.qty })),
-          totalAmount: total,
-          orderType: payType,
-          paymentStatus: payType === "cod" ? "cod" : "pending",
-          shippingAddress: form,
-        }),
-      });
+      await fetch("https://skinify-backend-wmf4.onrender.com/api/orders", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${token}`,
+  },
+  body: JSON.stringify({
+    products: cart.map(i => ({ productId: i._id, quantity: i.qty })),
+    totalAmount: total,
+    orderType: payType,
+    paymentStatus: payType === "cod" ? "cod" : "pending",
+    shippingAddress: form,
+  }),
+});
 
       if (clearCart) clearCart();
       setSuccess(true);
