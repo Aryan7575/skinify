@@ -109,7 +109,7 @@ function AIUpload({ user }) {
         reader.onloadend = () => resolve(reader.result);
         reader.onerror = reject;
       });
-      const authRes = await fetch("http://localhost:5000/api/imagekit/auth");
+      const authRes = await fetch("https://skinify-backend-wmf4.onrender.com/api/imagekit/auth");
       const authData = await authRes.json();
       await imagekit.upload({ file: base64, fileName: image.name, token: authData.token, signature: authData.signature, expire: authData.expire });
       const res = await axios.post("/ai/analyze", { image: base64 }, { headers: { "Content-Type": "application/json" } });
