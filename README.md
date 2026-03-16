@@ -267,7 +267,6 @@ This project is built for academic purposes as part of the BSc Computer Science 
 
 **Aryan Ramvilas Vishwakarma**
 - GitHub: [@your-username](https://github.com/your-username)
-- Project Guide: Prof. Vipul Saluja
 - Institution: R.D. & S.H. National College, Bandra, Mumbai
 
 ---
