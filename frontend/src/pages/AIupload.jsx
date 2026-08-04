@@ -76,7 +76,7 @@ const concernInfo = {
   normal: "Your skin looks healthy! Explore our maintenance and glow products.",
 };
 
-function AIUpload({ user }) {
+function AIUpload() {
   const [image, setImage] = useState(null);
   const [preview, setPreview] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -116,7 +116,11 @@ function AIUpload({ user }) {
       setResult(res.data);
     } catch (error) {
       console.error("AI ERROR:", error);
-      alert("AI analysis failed");
+      const apiMessage =
+        error?.response?.data?.message ||
+        error?.response?.data?.error?.errors?.[0]?.message ||
+        "AI analysis failed";
+      alert(apiMessage);
     } finally {
       setLoading(false);
     }

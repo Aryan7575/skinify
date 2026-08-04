@@ -1,6 +1,6 @@
 import { useState } from "react";
 import axios from "../api/axios";
-import { useNavigate, Link } from "react-router-dom";
+import { Link } from "react-router-dom";
 
 const styles = `
   @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap');
@@ -139,7 +139,6 @@ function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
 
   const handleLogin = async () => {
   if (!email || !password) return;
@@ -154,7 +153,7 @@ function Login() {
     } else {
       window.location.href = "/home";
     }
-  } catch (err) {
+  } catch {
     alert("Invalid credentials");
   } finally {
     setLoading(false);

@@ -185,7 +185,7 @@ const styles = `
   }
 `;
 
-function AdminDashboard({ onLogout, user }) {
+function AdminDashboard({ onLogout }) {
   const [tab, setTab] = useState("overview");
   const [stats, setStats] = useState(null);
   const [orders, setOrders] = useState([]);
@@ -196,40 +196,47 @@ function AdminDashboard({ onLogout, user }) {
   const [form, setForm] = useState({});
   const [tagInput, setTagInput] = useState("");
 
-  useEffect(() => { fetchStats(); }, []);
-  useEffect(() => {
-    if (tab === "orders") fetchOrders();
-    if (tab === "products") fetchProducts();
-    if (tab === "users") fetchUsers();
-  }, [tab]);
-
-  const fetchStats = async () => {
+  async function fetchStats() {
     try { const res = await axios.get("/admin/stats"); setStats(res.data); }
     catch (err) { console.error("STATS ERR:", err.response?.data || err.message); }
-  };
-  const fetchOrders = async () => {
+  }
+  async function fetchOrders() {
     setLoading(true);
     try { const res = await axios.get("/admin/orders"); setOrders(res.data); }
     catch (err) { console.error("ORDERS ERR:", err.response?.data || err.message); }
     setLoading(false);
-  };
-  const fetchProducts = async () => {
+  }
+  async function fetchProducts() {
     setLoading(true);
     try { const res = await axios.get("/admin/products"); setProducts(res.data); }
     catch (err) { console.error("PRODUCTS ERR:", err.response?.data || err.message); }
     setLoading(false);
-  };
-  const fetchUsers = async () => {
+  }
+  async function fetchUsers() {
     setLoading(true);
     try { const res = await axios.get("/admin/users"); setUsers(res.data); }
     catch (err) { console.error("USERS ERR:", err.response?.data || err.message); }
     setLoading(false);
-  };
+  }
+
+  useEffect(() => {
+    (async () => {
+      await fetchStats();
+    })();
+  }, []);
+  useEffect(() => {
+    (async () => {
+      if (tab === "orders") await fetchOrders();
+      if (tab === "products") await fetchProducts();
+      if (tab === "users") await fetchUsers();
+    })();
+  }, [tab]);
+
   const updateOrderStatus = async (id, status) => {
     try {
       await axios.put(`/admin/orders/${id}/status`, { status });
       setOrders(orders.map(o => o._id === id ? { ...o, status } : o));
-    } catch (err) { alert("Failed to update status"); }
+    } catch { alert("Failed to update status"); }
   };
   const openAddModal = () => {
     setForm({ name: "", price: "", image: "", description: "", tags: [], category: "", stock: "" });
@@ -251,17 +258,17 @@ function AdminDashboard({ onLogout, user }) {
         setProducts(products.map(p => p._id === modal.product._id ? res.data : p));
       }
       setModal(null);
-    } catch (err) { alert("Failed to save product"); }
+    } catch { alert("Failed to save product"); }
   };
   const deleteProduct = async (id) => {
     if (!window.confirm("Delete this product?")) return;
     try { await axios.delete(`/admin/products/${id}`); setProducts(products.filter(p => p._id !== id)); }
-    catch (err) { alert("Failed to delete"); }
+    catch { alert("Failed to delete"); }
   };
   const deleteUser = async (id) => {
     if (!window.confirm("Delete this user?")) return;
     try { await axios.delete(`/admin/users/${id}`); setUsers(users.filter(u => u._id !== id)); }
-    catch (err) { alert("Failed to delete"); }
+    catch { alert("Failed to delete"); }
   };
   const addTag = (e) => {
     if (e.key === "Enter" && tagInput.trim()) {

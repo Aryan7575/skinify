@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
 import Cart from "./pages/Cart";
 import Navbar from "./components/Navbar";
@@ -28,10 +28,24 @@ function App() {
 
   return (
     <BrowserRouter>
-      {localStorage.getItem("token") && <Navbar />}
+      <AppLayout currentUser={currentUser} />
+    </BrowserRouter>
+  );
+}
+
+function AppLayout({ currentUser }) {
+  const location = useLocation();
+  const token = localStorage.getItem("token");
+  const hideNavbarRoutes = new Set(["/", "/login", "/register", "/admin"]);
+  const showNavbar = Boolean(token) && !hideNavbarRoutes.has(location.pathname);
+
+  return (
+    <>
+      {showNavbar && <Navbar />}
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<Login />} />
+        <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
 
         {/* Protected Routes */}
@@ -45,7 +59,7 @@ function App() {
         {/* Admin Route - NO ProtectedRoute, AdminPage handles its own auth */}
         <Route path="/admin" element={<AdminPage />} />
       </Routes>
-    </BrowserRouter>
+    </>
   );
 }
 

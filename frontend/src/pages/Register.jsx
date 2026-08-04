@@ -148,7 +148,7 @@ function Register() {
     try {
       await axios.post("/auth/register", { name, email, password });
       navigate("/login");
-    } catch (err) {
+    } catch {
       alert("Registration failed. Please try again.");
     } finally {
       setLoading(false);

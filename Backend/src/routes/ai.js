@@ -7,22 +7,79 @@ const AiAnalysis = require("../modules/aianalysis.modules");
 const { protect } = require("../middlewares/auth.middlewares");
 
 const CF_ACCOUNT_ID = process.env.CF_ACCOUNT_ID;
-const CF_API_TOKEN  = process.env.CF_API_TOKEN;
+const CF_API_TOKEN = process.env.CF_API_TOKEN;
 
 const CF_API_URL = `https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/ai/run/@cf/meta/llama-3.2-11b-vision-instruct`;
 
+const ALLOWED_CONCERNS = [
+  "acne",
+  "pigmentation",
+  "darkspots",
+  "oily",
+  "dry",
+  "tanning",
+  "hairfall",
+  "dandruff",
+  "weightloss",
+  "normal",
+];
+
 router.post("/analyze", protect, async (req, res) => {
   try {
-
     const { image } = req.body;
 
-    console.log("Image received for AI");
-
     if (!image) {
-      return res.status(400).json({ message: "Image required" });
+      return res.status(400).json({
+        message: "Image is required",
+      });
     }
 
-    const base64Data = image.includes(",") ? image.split(",")[1] : image;
+    if (!CF_ACCOUNT_ID || !CF_API_TOKEN) {
+      return res.status(500).json({
+        message: "Cloudflare AI is not configured",
+      });
+    }
+
+    // Ensure image is a Data URI
+    const imageData = image.startsWith("data:image")
+      ? image
+      : `data:image/jpeg;base64,${image}`;
+
+    // Strip the data URI prefix and convert base64 -> raw byte array
+    const base64Only = imageData.includes(",")
+      ? imageData.split(",")[1]
+      : imageData;
+    const imageBytes = Array.from(Buffer.from(base64Only, "base64"));
+
+    console.log("📨 Sending request to Cloudflare AI...");
+
+    const payload = {
+      image: imageBytes,
+      prompt: `You are a skincare AI.
+
+Analyze the uploaded image.
+
+Choose ONLY ONE concern from this list:
+
+acne
+pigmentation
+darkspots
+oily
+dry
+tanning
+hairfall
+dandruff
+weightloss
+normal
+
+Reply ONLY with JSON.
+
+Example:
+{"concern":"acne"}`,
+      max_tokens: 50,
+    };
+
+    console.log(JSON.stringify(payload, null, 2));
 
     const response = await fetch(CF_API_URL, {
       method: "POST",
@@ -30,84 +87,59 @@ router.post("/analyze", protect, async (req, res) => {
         Authorization: `Bearer ${CF_API_TOKEN}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        messages: [
-          {
-            role: "user",
-            content: [
-              {
-                type: "image_url",
-                image_url: {
-                  url: `data:image/jpeg;base64,${base64Data}`,
-                },
-              },
-              {
-                type: "text",
-                text: `You are a skin, hair and body analysis AI for a beauty and personal care ecommerce app.
-Analyze this image carefully and detect the most visible concern.
-
-Choose ONLY ONE from this list:
-- acne: visible pimples, red bumps, breakouts on face
-- pigmentation: uneven skin tone, dark patches on face
-- darkspots: small dark spots or blemishes on skin
-- oily: shiny, greasy looking facial skin
-- dry: flaky, rough, dull skin on face
-- tanning: sun darkened or tanned skin
-- hairfall: visible thinning of hair, bald patches, sparse hair on scalp
-- dandruff: white or yellow flakes visible on scalp or hair, flaky scalp
-- weightloss: overweight or obese body, excess body fat visible
-- normal: clear, even, healthy skin or hair with no visible concern
-
-Reply with ONLY raw JSON, no explanation, no markdown:
-{"concern":"pigmentation"}`,
-              },
-            ],
-          },
-        ],
-        max_tokens: 50,
-      }),
+      body: JSON.stringify(payload),
     });
 
-    const rawText = await response.text();
-    console.log("CF STATUS:", response.status);
-    console.log("CF RAW:", rawText);
+    const raw = await response.text();
+
+    console.log("Cloudflare Response:");
+    console.log(raw);
 
     if (!response.ok) {
-      console.error("CF API ERROR:", rawText);
-      return res.status(500).json({ message: "Cloudflare AI failed", error: rawText });
+      return res.status(response.status).json({
+        message: "Cloudflare AI request failed",
+        error: raw,
+      });
     }
 
-    const cfData = JSON.parse(rawText);
-    const aiResult = cfData?.result?.response;
-    console.log("AI Result:", aiResult);
+    const cf = JSON.parse(raw);
+
+    const output = cf.result.response;
 
     let concern = "normal";
 
     try {
-      if (typeof aiResult === "object" && aiResult?.concern) {
-        concern = aiResult.concern;
-      } else if (typeof aiResult === "string") {
-        const cleaned = aiResult.replace(/```json|```/g, "").trim();
-        try {
-          const parsed = JSON.parse(cleaned);
-          if (parsed.concern) concern = parsed.concern;
-        } catch {
-          const concerns = ["acne", "pigmentation", "darkspots", "oily", "dry", "tanning", "hairfall", "dandruff", "weightloss"];
-          const found = concerns.find(c => cleaned.toLowerCase().includes(c));
-          if (found) concern = found;
-        }
+      // output can come back as an object ({"concern":"hairfall"}),
+      // as a JSON string, or as free text with the concern embedded in it.
+      let parsed;
+
+      if (output && typeof output === "object") {
+        parsed = output;
+      } else if (typeof output === "string") {
+        const cleaned = output.replace(/```json|```/g, "").trim();
+        parsed = JSON.parse(cleaned);
       }
-    } catch (err) {
-      console.log("Parsing failed, defaulting to normal:", err.message);
+
+      if (parsed && parsed.concern) {
+        concern = String(parsed.concern).toLowerCase();
+      }
+    } catch {
+      const outputText =
+        typeof output === "string" ? output : JSON.stringify(output || "");
+      const found = ALLOWED_CONCERNS.find((c) =>
+        outputText.toLowerCase().includes(c)
+      );
+
+      if (found) concern = found;
     }
 
-    console.log("Detected Concern:", concern);
+    if (!ALLOWED_CONCERNS.includes(concern)) {
+      concern = "normal";
+    }
 
     const products = await Product.find({
-      tags: { $in: [concern] },
+      tags: concern,
     });
-
-    console.log("Products found:", products.length);
 
     await AiAnalysis.create({
       userId: req.user.id,
@@ -115,11 +147,17 @@ Reply with ONLY raw JSON, no explanation, no markdown:
       recommendedProducts: products.map((p) => p._id),
     });
 
-    res.json({ concern, products });
+    res.json({
+      concern,
+      products,
+    });
+  } catch (err) {
+    console.error(err);
 
-  } catch (error) {
-    console.error("AI SERVER ERROR:", error);
-    res.status(500).json({ message: "AI failed", error: error.message });
+    res.status(500).json({
+      message: "AI failed",
+      error: err.message,
+    });
   }
 });
 
